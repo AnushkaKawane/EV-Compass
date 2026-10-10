@@ -75,22 +75,12 @@ MODEL, MODEL_METRICS = get_model()
 
 @app.route("/style.css")
 def style_css():
-    response = send_from_directory(
-        str(PUBLIC_DIR),
-        "style.css"
-    )
-    response.headers["Cache-Control"] = "no-cache"
-    return response
+    return send_from_directory(str(PUBLIC_DIR), "style.css")
 
 
 @app.route("/script.js")
 def script_js():
-    response = send_from_directory(
-        str(PUBLIC_DIR),
-        "script.js"
-    )
-    response.headers["Cache-Control"] = "no-cache"
-    return response
+    return send_from_directory(str(PUBLIC_DIR), "script.js")
 
 
 # --------------------------------------------------
