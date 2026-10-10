@@ -2,405 +2,1024 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#171b2d">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>EV Compass | Your EV Adoption Guide</title>
 
-    <title>EV Compass | Your Electric Future</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <meta
-        name="description"
-        content="Explore your EV readiness, charging accessibility,
-        and electric vehicle purchase likelihood."
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
     >
 
     <link
         rel="stylesheet"
-        href="{{ url_for('style_css') }}"
+        href="{{ url_for('static', filename='css/style.css') }}"
     >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="home-page">
+<body>
 
-    <header class="navbar navbar-dark">
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
 
         <a
             class="brand"
-            href="{{ url_for('home') }}"
+            href="#"
+            aria-label="EV Compass overview"
+            data-tab-link="overview"
         >
-            <span class="brand-icon">E</span>
-            <span>EV<span class="brand-accent">Compass</span></span>
+            <span class="brand-mark">E</span>
+
+            <span>
+                <strong>EV Compass</strong>
+                <small>ADOPTION INTELLIGENCE</small>
+            </span>
         </a>
 
-        <nav class="nav-links">
+        <div class="nav-label">WORKSPACE</div>
 
-            <a href="{{ url_for('home') }}">Home</a>
+        <nav class="main-nav" aria-label="Main navigation">
 
-            <a href="{{ url_for('assessment') }}">
-                Assessment
-            </a>
+            <button
+                class="nav-item active"
+                data-tab-link="overview"
+            >
+                <span class="nav-icon">◫</span>
+                Overview
+            </button>
 
-            <a href="{{ url_for('simulator') }}">
-                Simulator
-            </a>
+            <button
+                class="nav-item"
+                data-tab-link="assessment"
+            >
+                <span class="nav-icon">◎</span>
+                Personal assessment
+            </button>
 
-            <a href="{{ url_for('insights') }}">
-                Insights
-            </a>
+            <button
+                class="nav-item"
+                data-tab-link="simulator"
+            >
+                <span class="nav-icon">⌁</span>
+                What-if simulator
+            </button>
+
+            <button
+                class="nav-item"
+                data-tab-link="recommendations"
+            >
+                <span class="nav-icon">✧</span>
+                Recommendations
+            </button>
 
         </nav>
 
-        <a
-            class="button button-green nav-button"
-            href="{{ url_for('assessment') }}"
-        >
-            Get Started
-        </a>
+        <div class="sidebar-bottom">
+            <div class="status-dot"></div>
 
-    </header>
+            <div>
+                <strong>Model workspace</strong>
+                <small>Prediction tools ready</small>
+            </div>
+        </div>
+
+    </aside>
 
 
-    <main>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
 
-        <section class="hero">
+        <header class="topbar">
 
-            <div class="hero-content">
+            <div class="breadcrumb">
+                EV COMPASS
+                <span>/</span>
+                <strong id="breadcrumbCurrent">Overview</strong>
+            </div>
 
-                <div class="eyebrow eyebrow-light">
-                    YOUR JOURNEY TO ELECTRIC
+            <div class="topbar-right">
+
+                <span class="topbar-pill">
+                    <i></i>
+                    Interactive insights
+                </span>
+
+                <span class="avatar">EV</span>
+
+            </div>
+
+        </header>
+
+
+        <!-- =====================================
+             OVERVIEW
+        ====================================== -->
+
+        <section class="page active" id="page-overview">
+
+            <div class="hero">
+
+                <div class="hero-copy">
+
+                    <span class="eyebrow">
+                        <span class="eyebrow-line"></span>
+                        YOUR EV DECISION, CLARIFIED
+                    </span>
+
+                    <h1>
+                        A clearer path to<br>
+                        <span>electric mobility.</span>
+                    </h1>
+
+                    <p>
+                        Understand your readiness, explore what influences
+                        EV adoption, and see how different conditions may
+                        change a model's prediction.
+                    </p>
+
+                    <button
+                        class="button button-primary"
+                        data-tab-link="assessment"
+                    >
+                        Start your assessment
+                        <span>↗</span>
+                    </button>
+
                 </div>
 
-                <h1>
-                    Make your next move
-                    <span>electric.</span>
-                </h1>
 
-                <p class="hero-description">
-                    Discover how ready you are for an electric
-                    vehicle. Understand your charging needs,
-                    explore your options, and make informed decisions.
-                </p>
+                <div class="hero-art" aria-hidden="true">
 
-                <div class="hero-actions">
+                    <div class="orbit orbit-one"></div>
+                    <div class="orbit orbit-two"></div>
 
-                    <a
-                        class="button button-green button-large"
-                        href="{{ url_for('assessment') }}"
-                    >
-                        Start My Assessment
-                        <span>→</span>
-                    </a>
+                    <div class="art-core">
+                        <span>EV</span>
+                        <small>COMPASS</small>
+                    </div>
 
-                    <a
-                        class="hero-secondary"
-                        href="{{ url_for('insights') }}"
-                    >
-                        Explore the insights
-                    </a>
+                    <div class="floating-tag tag-top">
 
-                </div>
+                        <span class="tag-symbol">↗</span>
 
-                <div class="hero-note">
-                    Personalized assessment · Interactive scenarios
+                        <span>
+                            <small>DECISION SUPPORT</small>
+                            <strong>Built around you</strong>
+                        </span>
+
+                    </div>
+
+                    <div class="floating-tag tag-bottom">
+
+                        <span class="mini-bars">
+                            <i></i>
+                            <i></i>
+                            <i></i>
+                            <i></i>
+                        </span>
+
+                        <span>
+                            <small>ADOPTION FACTORS</small>
+                            <strong>Explore the impact</strong>
+                        </span>
+
+                    </div>
+
                 </div>
 
             </div>
 
 
-            <div class="hero-visual">
-
-                <div class="visual-orbit orbit-one"></div>
-
-                <div class="visual-orbit orbit-two"></div>
-
-                <div class="visual-card">
-
-                    <div class="visual-card-top">
-                        <span>EV COMPASS</span>
-                        <span class="status-dot"></span>
-                    </div>
-
-                    <div class="visual-car">
-                        <svg
-                            viewBox="0 0 440 220"
-                            role="img"
-                            aria-label="Illustration of an electric car"
-                        >
-
-                            <defs>
-                                <linearGradient
-                                    id="carGradient"
-                                    x1="0"
-                                    y1="0"
-                                    x2="1"
-                                    y2="1"
-                                >
-                                    <stop
-                                        offset="0%"
-                                        stop-color="#9AF5C4"
-                                    />
-
-                                    <stop
-                                        offset="100%"
-                                        stop-color="#20A86B"
-                                    />
-                                </linearGradient>
-                            </defs>
-
-                            <path
-                                d="M65 133 L91 91
-                                   Q102 75 126 75
-                                   L274 75
-                                   Q294 75 311 96
-                                   L344 125
-                                   L369 133
-                                   Q380 138 380 151
-                                   L380 166
-                                   L55 166
-                                   L55 147
-                                   Q55 136 65 133Z"
-                                fill="url(#carGradient)"
-                            />
-
-                            <path
-                                d="M111 94
-                                   Q119 86 135 86
-                                   L185 86
-                                   L185 121
-                                   L89 121Z"
-                                fill="#17362E"
-                            />
-
-                            <path
-                                d="M198 86
-                                   L269 86
-                                   Q286 86 299 104
-                                   L314 121
-                                   L198 121Z"
-                                fill="#17362E"
-                            />
-
-                            <path
-                                d="M72 138 L102 138"
-                                stroke="#E5FFF0"
-                                stroke-width="6"
-                                stroke-linecap="round"
-                            />
-
-                            <path
-                                d="M345 139 L369 139"
-                                stroke="#E5FFF0"
-                                stroke-width="6"
-                                stroke-linecap="round"
-                            />
-
-                            <circle
-                                cx="119"
-                                cy="166"
-                                r="26"
-                                fill="#10221D"
-                            />
-
-                            <circle
-                                cx="119"
-                                cy="166"
-                                r="13"
-                                fill="#A4B7AF"
-                            />
-
-                            <circle
-                                cx="319"
-                                cy="166"
-                                r="26"
-                                fill="#10221D"
-                            />
-
-                            <circle
-                                cx="319"
-                                cy="166"
-                                r="13"
-                                fill="#A4B7AF"
-                            />
-
-                            <path
-                                d="M219 135 L219 151
-                                   L210 151 L228 173
-                                   L225 155 L236 155Z"
-                                fill="#D8FFE8"
-                            />
-
-                        </svg>
-                    </div>
-
-                    <div class="visual-card-bottom">
-
-                        <div>
-                            <span class="mini-label">
-                                YOUR NEXT STEP
-                            </span>
-
-                            <h3>
-                                A smarter way to go electric.
-                            </h3>
-                        </div>
-
-                        <div class="visual-arrow">↗</div>
-
-                    </div>
-
-                </div>
-
-                <div class="floating-note note-top">
-                    <span class="note-icon">✳</span>
-
-                    <div>
-                        <strong>Know your readiness</strong>
-                        <small>Built around your lifestyle</small>
-                    </div>
-                </div>
-
-                <div class="floating-note note-bottom">
-                    <span class="note-icon">↗</span>
-
-                    <div>
-                        <strong>Explore scenarios</strong>
-                        <small>Compare model predictions</small>
-                    </div>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <section class="feature-section">
+            <!-- WORKSPACE CARDS -->
 
             <div class="section-heading">
 
-                <div class="eyebrow">
-                    A CLEARER WAY FORWARD
+                <div>
+                    <span class="eyebrow">YOUR WORKSPACE</span>
+                    <h2>Explore the compass</h2>
                 </div>
 
-                <h2>
-                    Your EV journey,
-                    <span>simplified.</span>
-                </h2>
-
                 <p>
-                    Understand your situation before making
-                    your next vehicle decision.
+                    One connected workflow, from understanding to action.
                 </p>
 
             </div>
 
 
-            <div class="feature-grid">
+            <div class="overview-cards">
 
-                <article class="feature-card">
+                <button
+                    class="feature-card"
+                    data-tab-link="assessment"
+                >
+                    <span class="feature-icon lavender">◎</span>
+                    <span class="card-arrow">↗</span>
 
-                    <div class="feature-icon">01</div>
+                    <small>01 / ASSESS</small>
 
-                    <h3>Discover your readiness</h3>
-
-                    <p>
-                        Explore your charging access, commuting
-                        needs, and reported range anxiety.
-                    </p>
-
-                    <a href="{{ url_for('assessment') }}">
-                        Start assessment →
-                    </a>
-
-                </article>
-
-
-                <article class="feature-card">
-
-                    <div class="feature-icon">02</div>
-
-                    <h3>Explore what-if scenarios</h3>
+                    <h3>Personal EV assessment</h3>
 
                     <p>
-                        Change selected circumstances and see how
-                        the model's estimated purchase likelihood changes.
+                        Estimate purchase likelihood using the factors
+                        in your profile.
                     </p>
 
-                    <a href="{{ url_for('simulator') }}">
-                        Open simulator →
-                    </a>
+                    <span class="card-link">
+                        Build your profile
+                        <b>→</b>
+                    </span>
+                </button>
 
-                </article>
 
+                <button
+                    class="feature-card"
+                    data-tab-link="simulator"
+                >
+                    <span class="feature-icon blue">⌁</span>
+                    <span class="card-arrow">↗</span>
 
-                <article class="feature-card">
+                    <small>02 / EXPLORE</small>
 
-                    <div class="feature-icon">03</div>
-
-                    <h3>Understand the bigger picture</h3>
+                    <h3>What-if simulator</h3>
 
                     <p>
-                        Explore the relationships between EV
-                        purchase intention and the dataset's key factors.
+                        Adjust charging, subsidy, and range anxiety
+                        assumptions.
                     </p>
 
-                    <a href="{{ url_for('insights') }}">
-                        View insights →
-                    </a>
+                    <span class="card-link">
+                        Test a scenario
+                        <b>→</b>
+                    </span>
+                </button>
 
-                </article>
+
+                <button
+                    class="feature-card"
+                    data-tab-link="recommendations"
+                >
+                    <span class="feature-icon peach">✧</span>
+                    <span class="card-arrow">↗</span>
+
+                    <small>03 / ACT</small>
+
+                    <h3>Recommendations</h3>
+
+                    <p>
+                        Turn your profile into practical next steps
+                        and considerations.
+                    </p>
+
+                    <span class="card-link">
+                        View next steps
+                        <b>→</b>
+                    </span>
+                </button>
 
             </div>
 
-        </section>
 
+            <!-- DATASET SNAPSHOT -->
 
-        <section class="closing-section">
+            <div class="section-heading data-heading">
 
-            <div>
-                <div class="eyebrow eyebrow-light">
-                    READY WHEN YOU ARE
+                <div>
+                    <span class="eyebrow">DATASET SNAPSHOT</span>
+                    <h2>What the data tells us</h2>
                 </div>
 
-                <h2>
-                    Start with your
-                    <span>everyday journey.</span>
-                </h2>
+                <span class="muted-caption">
+                    Based on the supplied dataset
+                </span>
+
             </div>
 
-            <a
-                class="button button-green button-large"
-                href="{{ url_for('assessment') }}"
-            >
-                Begin Assessment →
-            </a>
+
+            <div class="metric-grid">
+
+                <div class="metric-card">
+                    <span class="metric-label">Records analysed</span>
+                    <strong id="recordCount">—</strong>
+                    <span class="metric-note">Rows in dataset</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-label">Purchase target</span>
+                    <strong id="targetName">Will_Buy_EV</strong>
+                    <span class="metric-note">Classification task</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-label">Positive target rate</span>
+                    <strong id="buyRate">—</strong>
+                    <span class="metric-note">Records labelled “Yes”</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-label">Model test accuracy</span>
+                    <strong id="modelAccuracy">—</strong>
+                    <span class="metric-note">Hold-out evaluation</span>
+                </div>
+
+            </div>
+
+
+            <div class="chart-grid">
+
+                <article class="panel chart-panel">
+
+                    <div class="panel-heading">
+                        <div>
+                            <span class="eyebrow">ADOPTION SIGNAL</span>
+                            <h3>Purchase-intention labels</h3>
+                        </div>
+
+                        <span class="chart-badge">Dataset</span>
+                    </div>
+
+                    <div class="chart-wrap">
+                        <canvas id="targetChart"></canvas>
+                    </div>
+
+                </article>
+
+
+                <article class="panel chart-panel">
+
+                    <div class="panel-heading">
+                        <div>
+                            <span class="eyebrow">CONTEXT</span>
+                            <h3>Respondent city types</h3>
+                        </div>
+
+                        <span class="chart-badge">Dataset</span>
+                    </div>
+
+                    <div class="chart-wrap">
+                        <canvas id="cityChart"></canvas>
+                    </div>
+
+                </article>
+
+            </div>
+
+
+            <p class="footnote">
+                Dataset summaries describe the supplied records.
+                They are not guarantees about the wider population
+                or future EV sales.
+            </p>
 
         </section>
+
+
+
+        <!-- =====================================
+             PERSONAL ASSESSMENT
+        ====================================== -->
+
+        <section class="page" id="page-assessment">
+
+            <div class="page-intro">
+
+                <span class="eyebrow">01 / PERSONAL PROFILE</span>
+
+                <h1>
+                    Let's understand
+                    <span>your context.</span>
+                </h1>
+
+                <p>
+                    Enter a few details to estimate EV purchase likelihood.
+                    Fields reflect variables available in the supplied dataset.
+                </p>
+
+            </div>
+
+
+            <form class="panel assessment-panel" id="assessmentForm">
+
+                <div class="form-section-title">
+
+                    <span class="step-number">01</span>
+
+                    <div>
+                        <h3>About you and your driving</h3>
+                        <p>General profile and everyday travel patterns.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <label>
+                        Age
+                        <span class="input-hint">Years</span>
+
+                        <input
+                            type="number"
+                            name="Age"
+                            min="18"
+                            max="100"
+                            value="35"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Annual income
+                        <span class="input-hint">USD</span>
+
+                        <input
+                            type="number"
+                            name="Annual_Income_USD"
+                            min="0"
+                            max="10000000"
+                            step="500"
+                            value="65000"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Gender
+
+                        <select name="Gender">
+                            <option>Female</option>
+                            <option>Male</option>
+                            <option selected>Other</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        City type
+
+                        <select name="City_Type">
+                            <option>Urban</option>
+                            <option selected>Suburban</option>
+                            <option>Rural</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Daily commute
+                        <span class="input-hint">Kilometres</span>
+
+                        <input
+                            type="number"
+                            name="Daily_Commute_km"
+                            min="0"
+                            max="1000"
+                            step="0.1"
+                            value="25"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Cars currently owned
+
+                        <select name="Number_of_Cars_Owned">
+                            <option>0</option>
+                            <option selected>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Current car type
+
+                        <select name="Current_Car_Type">
+                            <option>Hatchback</option>
+                            <option selected>Sedan</option>
+                            <option>SUV</option>
+                            <option>Truck</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Environmental concern
+                        <span class="input-hint">1 = low · 5 = high</span>
+
+                        <select name="Environmental_Concern_Level">
+                            <option value="1">1 — Very low</option>
+                            <option value="2">2 — Low</option>
+                            <option value="3" selected>3 — Moderate</option>
+                            <option value="4">4 — High</option>
+                            <option value="5">5 — Very high</option>
+                        </select>
+                    </label>
+
+                </div>
+
+
+                <div class="form-section-title section-spaced">
+
+                    <span class="step-number">02</span>
+
+                    <div>
+                        <h3>Charging and adoption barriers</h3>
+                        <p>These factors can influence the model's prediction.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+                    <label>
+                        Charging stations near home
+
+                        <input
+                            type="number"
+                            name="Charging_Stations_Near_Home"
+                            min="0"
+                            max="100"
+                            value="3"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Charging stations near work
+
+                        <input
+                            type="number"
+                            name="Charging_Stations_Near_Work"
+                            min="0"
+                            max="100"
+                            value="3"
+                            required
+                        >
+                    </label>
+
+
+                    <label>
+                        Can you charge at home?
+
+                        <select name="Home_Charging_Possible">
+                            <option>Yes</option>
+                            <option selected>No</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Subsidy available?
+
+                        <select name="Subsidy_Available">
+                            <option>Yes</option>
+                            <option selected>No</option>
+                        </select>
+                    </label>
+
+
+                    <label class="full-width">
+                        Range anxiety
+
+                        <span class="input-hint">
+                            Concern about running out of charge before reaching a charger
+                        </span>
+
+                        <select name="Range_Anxiety_Level">
+                            <option>Low</option>
+                            <option selected>Medium</option>
+                            <option>High</option>
+                        </select>
+                    </label>
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <span class="form-disclaimer">
+                        Your result is a model estimate, not a financial
+                        or purchase recommendation.
+                    </span>
+
+                    <button
+                        class="button button-primary"
+                        type="submit"
+                        id="predictButton"
+                    >
+                        Calculate my profile
+                        <span>→</span>
+                    </button>
+
+                </div>
+
+            </form>
+
+
+            <!-- ASSESSMENT RESULTS -->
+
+            <div
+                class="result-panel panel hidden"
+                id="assessmentResult"
+                aria-live="polite"
+            >
+
+                <div class="result-main">
+
+                    <span class="eyebrow">YOUR MODEL RESULT</span>
+
+                    <h2 id="predictionHeading">Prediction ready</h2>
+
+                    <p id="predictionText"></p>
+
+                    <div class="probability-line">
+                        <span>Estimated probability of “Yes”</span>
+                        <strong id="probabilityValue">—</strong>
+                    </div>
+
+                    <div class="progress-track">
+                        <span id="probabilityBar"></span>
+                    </div>
+
+                    <p class="footnote">
+                        Probability reflects this model's output and may
+                        not be calibrated. It is not a certainty about an
+                        individual's future choice.
+                    </p>
+
+                </div>
+
+
+                <div class="readiness-box">
+
+                    <span class="eyebrow">READINESS INDICATOR</span>
+
+                    <strong>
+                        <span id="readinessValue">—</span>
+                        <small>/100</small>
+                    </strong>
+
+                    <p>
+                        A transparent heuristic based on charging access,
+                        range anxiety, commute, environmental concern,
+                        and subsidy availability—not an ML probability.
+                    </p>
+
+                </div>
+
+
+                <div class="result-actions">
+
+                    <button
+                        class="button button-secondary"
+                        id="sendToSimulator"
+                        type="button"
+                    >
+                        Explore this profile in simulator ↗
+                    </button>
+
+                    <button
+                        class="text-button"
+                        data-tab-link="recommendations"
+                    >
+                        View recommendations →
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             WHAT-IF SIMULATOR
+        ====================================== -->
+
+        <section class="page" id="page-simulator">
+
+            <div class="page-intro">
+
+                <span class="eyebrow">02 / SCENARIO LAB</span>
+
+                <h1>
+                    What could change
+                    <span>your outlook?</span>
+                </h1>
+
+                <p>
+                    Keep your assessment profile as a baseline, then adjust
+                    the conditions below and compare model predictions.
+                </p>
+
+            </div>
+
+
+            <div class="simulator-layout">
+
+                <form class="panel simulator-controls" id="simulatorForm">
+
+                    <div class="panel-heading">
+
+                        <div>
+                            <span class="eyebrow">SCENARIO CONTROLS</span>
+                            <h3>Change the conditions</h3>
+                        </div>
+
+                        <span class="control-icon">⌁</span>
+
+                    </div>
+
+
+                    <label class="range-label" for="homeStations">
+                        <span>Charging stations near home</span>
+                        <strong id="homeStationsValue">3</strong>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="homeStations"
+                        min="0"
+                        max="20"
+                        value="3"
+                    >
+
+
+                    <label class="range-label" for="workStations">
+                        <span>Charging stations near work</span>
+                        <strong id="workStationsValue">3</strong>
+                    </label>
+
+                    <input
+                        type="range"
+                        id="workStations"
+                        min="0"
+                        max="20"
+                        value="3"
+                    >
+
+
+                    <label>
+                        Home charging possible?
+
+                        <select id="simHomeCharging">
+                            <option>Yes</option>
+                            <option>No</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Subsidy available?
+
+                        <select id="simSubsidy">
+                            <option>Yes</option>
+                            <option>No</option>
+                        </select>
+                    </label>
+
+
+                    <label>
+                        Range anxiety
+
+                        <select id="simAnxiety">
+                            <option>Low</option>
+                            <option selected>Medium</option>
+                            <option>High</option>
+                        </select>
+                    </label>
+
+
+                    <div class="scenario-note">
+                        <strong>Scenario tip</strong>
+
+                        <p>
+                            Try changing one factor at a time to see
+                            how the model responds.
+                        </p>
+                    </div>
+
+
+                    <button
+                        class="button button-primary full-button"
+                        type="submit"
+                    >
+                        Run comparison
+                        <span>→</span>
+                    </button>
+
+                </form>
+
+
+                <div class="simulator-results">
+
+                    <div class="comparison-grid">
+
+                        <div class="panel comparison-card">
+
+                            <span class="eyebrow">BASELINE</span>
+
+                            <p>Original likelihood</p>
+
+                            <strong id="originalProbability">—</strong>
+
+                            <span class="comparison-caption">
+                                From your assessment
+                            </span>
+
+                        </div>
+
+
+                        <div class="panel comparison-card highlight-card">
+
+                            <span class="eyebrow">WHAT-IF</span>
+
+                            <p>Scenario likelihood</p>
+
+                            <strong id="simulatedProbability">—</strong>
+
+                            <span
+                                class="comparison-caption"
+                                id="differenceText"
+                            >
+                                Run a scenario to compare
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <article class="panel chart-panel simulation-chart">
+
+                        <div class="panel-heading">
+                            <div>
+                                <span class="eyebrow">SIDE-BY-SIDE</span>
+                                <h3>Prediction comparison</h3>
+                            </div>
+                        </div>
+
+                        <div class="chart-wrap">
+                            <canvas id="simulationChart"></canvas>
+                        </div>
+
+                    </article>
+
+
+                    <div class="panel note-panel">
+
+                        <span class="note-icon">i</span>
+
+                        <p id="simulationNote">
+                            Complete a personal assessment first.
+                            Your profile will be used as the baseline
+                            for scenarios.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- =====================================
+             RECOMMENDATIONS
+        ====================================== -->
+
+        <section class="page" id="page-recommendations">
+
+            <div class="page-intro">
+
+                <span class="eyebrow">03 / NEXT STEPS</span>
+
+                <h1>
+                    Turn insight into
+                    <span>action.</span>
+                </h1>
+
+                <p>
+                    Recommendations are based on the barriers visible
+                    in your profile. Explore practical considerations
+                    before making a decision.
+                </p>
+
+            </div>
+
+
+            <div class="recommendation-summary panel">
+
+                <div>
+
+                    <span class="eyebrow">YOUR PROFILE SUMMARY</span>
+
+                    <h2 id="recommendationProfileTitle">
+                        Complete your assessment
+                    </h2>
+
+                    <p id="recommendationSummaryText">
+                        Your assessment result will appear here, along
+                        with suggestions tailored to your selected inputs.
+                    </p>
+
+                </div>
+
+
+                <div class="summary-score">
+
+                    <span>Readiness indicator</span>
+
+                    <strong id="recommendationScore">—</strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="recommendation-list" id="recommendationList">
+
+                <article class="panel recommendation-card">
+
+                    <span class="recommendation-number">01</span>
+
+                    <div>
+                        <h3>Start with your profile</h3>
+
+                        <p>
+                            Complete the personal assessment to receive
+                            suggestions related to charging, range anxiety,
+                            and incentives.
+                        </p>
+                    </div>
+
+                    <span class="recommendation-arrow">↗</span>
+
+                </article>
+
+            </div>
+
+
+            <div class="panel next-step-banner">
+
+                <div>
+
+                    <span class="eyebrow">KEEP EXPLORING</span>
+
+                    <h3>Small changes, clearer comparisons.</h3>
+
+                    <p>
+                        Use the simulator to compare alternative
+                        assumptions with your original profile.
+                    </p>
+
+                </div>
+
+                <button
+                    class="button button-primary"
+                    data-tab-link="simulator"
+                >
+                    Open simulator
+                    <span>→</span>
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <footer class="footer">
+            <span>EV COMPASS</span>
+            <span>Decision support, not a purchase guarantee.</span>
+        </footer>
 
     </main>
 
-
-    <footer class="footer footer-dark">
-
-        <a
-            class="brand"
-            href="{{ url_for('home') }}"
-        >
-            <span class="brand-icon">E</span>
-            <span>EV<span class="brand-accent">Compass</span></span>
-        </a>
-
-        <p>
-            A smarter perspective on electric vehicle readiness.
-        </p>
-
-        <span>EV Compass · Machine Learning Project</span>
-
-    </footer>
+</div>
 
 
-    <script src="{{ url_for('script_js') }}"></script>
+<div class="toast" id="toast" role="status"></div>
+
+
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 
 </body>
 </html>

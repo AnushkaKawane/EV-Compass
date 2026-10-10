@@ -1,279 +1,387 @@
 from pathlib import Path
 import json
-import os
 
+import joblib
 import pandas as pd
 
 from flask import (
     Flask,
+    jsonify,
     render_template,
     request,
-    redirect,
-    url_for,
-    session,
-    send_from_directory,
 )
 
 from model import (
     FEATURES,
-    NUMERIC_FEATURES,
-    CATEGORICAL_FEATURES,
-    DATASET_PATH,
-    METRICS_PATH,
-    get_model,
-    predict_probability,
+    MODEL_DIR,
+    MODEL_PATH,
+    SUMMARY_PATH,
+    train_model,
 )
 
 
-# --------------------------------------------------
-# APPLICATION CONFIGURATION
-# --------------------------------------------------
+ROOT = Path(__file__).resolve().parent
 
-BASE_DIR = Path(__file__).resolve().parent
-
-PUBLIC_DIR = BASE_DIR / "public"
-
-app = Flask(__name__)
-
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "ev-compass-development-key"
+app = Flask(
+    __name__,
+    template_folder="templates",
+    static_folder="static",
 )
-
-
-# --------------------------------------------------
-# DEFAULT ASSESSMENT
-# --------------------------------------------------
-
-DEFAULT_DATA = {
-    "Age": 30,
-    "Gender": "Other",
-    "Annual_Income_USD": 60000,
-    "City_Type": "Urban",
-    "Daily_Commute_km": 25,
-    "Number_of_Cars_Owned": 1,
-    "Current_Car_Type": "Sedan",
-    "Charging_Stations_Near_Home": 3,
-    "Charging_Stations_Near_Work": 3,
-    "Home_Charging_Possible": "Yes",
-    "Environmental_Concern_Level": 3,
-    "Subsidy_Available": "Yes",
-    "Range_Anxiety_Level": "Medium",
-}
 
 
 # --------------------------------------------------
 # LOAD TRAINED MODEL
 # --------------------------------------------------
 
-MODEL, MODEL_METRICS = get_model()
+def ensure_model():
+
+    if not MODEL_PATH.exists():
+        train_model()
+
+    return joblib.load(MODEL_PATH)
+
+
+MODEL_BUNDLE = ensure_model()
+
+PIPELINE = MODEL_BUNDLE["pipeline"]
 
 
 # --------------------------------------------------
-# SERVE FRONTEND ASSETS
+# READ JSON FILES
 # --------------------------------------------------
 
-@app.route("/style.css")
-def style_css():
-    return send_from_directory(str(PUBLIC_DIR), "style.css")
+def read_json(path):
 
+    if not path.exists():
+        return {}
 
-@app.route("/script.js")
-def script_js():
-    return send_from_directory(str(PUBLIC_DIR), "script.js")
-
-
-# --------------------------------------------------
-# LOAD DATASET FOR INSIGHTS
-# --------------------------------------------------
-
-def get_dataset():
-
-    df = pd.read_csv(DATASET_PATH)
-
-    df["Will_Buy_EV"] = (
-        df["Will_Buy_EV"]
-        .astype(str)
-        .str.strip()
-        .str.title()
-    )
-
-    return df
-
-
-# --------------------------------------------------
-# PARSE USER INPUT
-# --------------------------------------------------
-
-def parse_form(form):
-
-    data = {}
-
-    for column in NUMERIC_FEATURES:
-
-        value = form.get(
-            column,
-            ""
-        ).strip()
-
-        if not value:
-            raise ValueError(
-                f"Please enter {column.replace('_', ' ')}."
+    try:
+        return json.loads(
+            path.read_text(
+                encoding="utf-8"
             )
+        )
 
-        if column in [
-            "Age",
-            "Number_of_Cars_Owned",
-            "Charging_Stations_Near_Home",
-            "Charging_Stations_Near_Work",
-            "Environmental_Concern_Level",
-        ]:
-            data[column] = int(value)
-        else:
-            data[column] = float(value)
+    except (
+        json.JSONDecodeError,
+        OSError,
+    ):
+        return {}
 
-    for column in CATEGORICAL_FEATURES:
 
-        value = form.get(
-            column,
-            ""
-        ).strip()
+# --------------------------------------------------
+# VALIDATE USER INPUT
+# --------------------------------------------------
 
-        if not value:
-            raise ValueError(
-                f"Please select {column.replace('_', ' ')}."
+def clean_payload(payload):
+
+    numeric = {
+        "Age": int(
+            payload.get("Age", 35)
+        ),
+
+        "Annual_Income_USD": float(
+            payload.get(
+                "Annual_Income_USD",
+                65000,
             )
+        ),
 
-        data[column] = value
-
-    # Validate realistic ranges.
-    if not 18 <= data["Age"] <= 100:
-        raise ValueError(
-            "Age must be between 18 and 100."
-        )
-
-    if data["Annual_Income_USD"] < 0:
-        raise ValueError(
-            "Income cannot be negative."
-        )
-
-    if data["Daily_Commute_km"] < 0:
-        raise ValueError(
-            "Commute distance cannot be negative."
-        )
-
-    if data["Number_of_Cars_Owned"] < 0:
-        raise ValueError(
-            "Number of cars cannot be negative."
-        )
-
-    for column in [
-        "Charging_Stations_Near_Home",
-        "Charging_Stations_Near_Work",
-    ]:
-        if data[column] < 0:
-            raise ValueError(
-                "Charging station counts cannot be negative."
+        "Daily_Commute_km": float(
+            payload.get(
+                "Daily_Commute_km",
+                25,
             )
+        ),
 
-    if not 1 <= data["Environmental_Concern_Level"] <= 5:
-        raise ValueError(
-            "Environmental concern must be between 1 and 5."
-        )
+        "Number_of_Cars_Owned": int(
+            payload.get(
+                "Number_of_Cars_Owned",
+                1,
+            )
+        ),
 
-    allowed_values = {
-        "Gender": [
-            "Male", "Female", "Other"
-        ],
-        "City_Type": [
-            "Urban", "Suburban", "Rural"
-        ],
-        "Current_Car_Type": [
-            "Sedan", "SUV", "Hatchback", "Truck"
-        ],
-        "Home_Charging_Possible": [
-            "Yes", "No"
-        ],
-        "Subsidy_Available": [
-            "Yes", "No"
-        ],
-        "Range_Anxiety_Level": [
-            "Low", "Medium", "High"
-        ],
+        "Charging_Stations_Near_Home": int(
+            payload.get(
+                "Charging_Stations_Near_Home",
+                3,
+            )
+        ),
+
+        "Charging_Stations_Near_Work": int(
+            payload.get(
+                "Charging_Stations_Near_Work",
+                3,
+            )
+        ),
+
+        "Environmental_Concern_Level": int(
+            payload.get(
+                "Environmental_Concern_Level",
+                3,
+            )
+        ),
     }
 
-    for column, options in allowed_values.items():
-        if data[column] not in options:
-            raise ValueError(
-                f"Invalid selection for {column.replace('_', ' ')}."
+    categorical = {
+        "Gender": str(
+            payload.get(
+                "Gender",
+                "Other",
             )
+        ),
 
-    return data
+        "City_Type": str(
+            payload.get(
+                "City_Type",
+                "Suburban",
+            )
+        ),
 
+        "Current_Car_Type": str(
+            payload.get(
+                "Current_Car_Type",
+                "Sedan",
+            )
+        ),
 
-# --------------------------------------------------
-# READINESS SCORE
-# --------------------------------------------------
+        "Home_Charging_Possible": str(
+            payload.get(
+                "Home_Charging_Possible",
+                "No",
+            )
+        ),
 
-def calculate_readiness(data):
+        "Subsidy_Available": str(
+            payload.get(
+                "Subsidy_Available",
+                "No",
+            )
+        ),
 
-    score = 0
-
-    # Home charging accessibility.
-    if data["Home_Charging_Possible"] == "Yes":
-        score += 25
-
-    # Nearby charging stations.
-    home_stations = data[
-        "Charging_Stations_Near_Home"
-    ]
-
-    work_stations = data[
-        "Charging_Stations_Near_Work"
-    ]
-
-    score += min(
-        home_stations,
-        10
-    ) * 2
-
-    score += min(
-        work_stations,
-        10
-    ) * 1.5
-
-    # Range anxiety.
-    anxiety_scores = {
-        "Low": 20,
-        "Medium": 12,
-        "High": 4,
+        "Range_Anxiety_Level": str(
+            payload.get(
+                "Range_Anxiety_Level",
+                "Medium",
+            )
+        ),
     }
 
-    score += anxiety_scores[
-        data["Range_Anxiety_Level"]
-    ]
+    bounds = {
+        "Age": (18, 100),
 
-    # Environmental concern.
-    score += (
-        data["Environmental_Concern_Level"]
-        * 2
-    )
+        "Annual_Income_USD": (
+            0,
+            10_000_000,
+        ),
 
-    # Daily commute suitability assessment.
-    commute = data["Daily_Commute_km"]
+        "Daily_Commute_km": (
+            0,
+            1000,
+        ),
 
-    if commute <= 40:
-        score += 10
-    elif commute <= 80:
-        score += 6
-    else:
-        score += 2
+        "Number_of_Cars_Owned": (
+            0,
+            20,
+        ),
 
-    return max(
-        0,
-        min(
+        "Charging_Stations_Near_Home": (
+            0,
             100,
-            round(score)
+        ),
+
+        "Charging_Stations_Near_Work": (
+            0,
+            100,
+        ),
+
+        "Environmental_Concern_Level": (
+            1,
+            5,
+        ),
+    }
+
+    for key, (low, high) in bounds.items():
+
+        if not low <= numeric[key] <= high:
+
+            raise ValueError(
+                f"{key.replace('_', ' ')} "
+                f"must be between {low} and {high}."
+            )
+
+    allowed = {
+        "Gender": {
+            "Male",
+            "Female",
+            "Other",
+        },
+
+        "City_Type": {
+            "Urban",
+            "Suburban",
+            "Rural",
+        },
+
+        "Current_Car_Type": {
+            "Hatchback",
+            "SUV",
+            "Sedan",
+            "Truck",
+        },
+
+        "Home_Charging_Possible": {
+            "Yes",
+            "No",
+        },
+
+        "Subsidy_Available": {
+            "Yes",
+            "No",
+        },
+
+        "Range_Anxiety_Level": {
+            "Low",
+            "Medium",
+            "High",
+        },
+    }
+
+    for key, options in allowed.items():
+
+        if categorical[key] not in options:
+
+            raise ValueError(
+                f"Invalid value for "
+                f"{key.replace('_', ' ')}."
+            )
+
+    return {
+        **numeric,
+        **categorical,
+    }
+
+
+# --------------------------------------------------
+# PREDICT PURCHASE LIKELIHOOD
+# --------------------------------------------------
+
+def predict_profile(profile):
+
+    row = pd.DataFrame(
+        [profile],
+        columns=FEATURES,
+    )
+
+    prediction = str(
+        PIPELINE.predict(row)[0]
+    )
+
+    probabilities = (
+        PIPELINE.predict_proba(row)[0]
+    )
+
+    classes = list(
+        PIPELINE.classes_
+    )
+
+    probability = float(
+        probabilities[
+            classes.index("Yes")
+        ]
+    ) * 100
+
+    return {
+        "prediction": prediction,
+
+        "probability": round(
+            probability,
+            1,
+        ),
+
+        "label": (
+            "Higher model-estimated likelihood"
+            if probability >= 50
+            else "Lower model-estimated likelihood"
+        ),
+    }
+
+
+# --------------------------------------------------
+# EV READINESS SCORE
+# --------------------------------------------------
+
+def readiness_score(profile):
+
+    commute = (
+        min(
+            profile["Daily_Commute_km"] / 60,
+            1,
+        ) * 15
+    )
+
+    home_charging = (
+        15
+        if profile["Home_Charging_Possible"] == "Yes"
+        else 0
+    )
+
+    home_stations = (
+        min(
+            profile[
+                "Charging_Stations_Near_Home"
+            ] / 10,
+            1,
+        ) * 15
+    )
+
+    work_stations = (
+        min(
+            profile[
+                "Charging_Stations_Near_Work"
+            ] / 10,
+            1,
+        ) * 10
+    )
+
+    environmental = (
+        (
+            profile[
+                "Environmental_Concern_Level"
+            ] - 1
+        ) / 4
+    ) * 15
+
+    subsidy = (
+        10
+        if profile["Subsidy_Available"] == "Yes"
+        else 0
+    )
+
+    anxiety_points = {
+        "Low": 20,
+        "Medium": 10,
+        "High": 0,
+    }
+
+    score = (
+        commute
+        + home_charging
+        + home_stations
+        + work_stations
+        + environmental
+        + subsidy
+        + anxiety_points[
+            profile["Range_Anxiety_Level"]
+        ]
+    )
+
+    return int(
+        round(
+            max(
+                0,
+                min(100, score),
+            )
         )
     )
 
@@ -282,61 +390,107 @@ def calculate_readiness(data):
 # PERSONALIZED RECOMMENDATIONS
 # --------------------------------------------------
 
-def generate_recommendations(data):
+def make_recommendations(profile):
 
     recommendations = []
 
-    if data["Home_Charging_Possible"] == "No":
-        recommendations.append(
-            "Explore workplace or public charging options "
-            "before deciding whether an EV suits your routine."
-        )
+    if (
+        profile["Home_Charging_Possible"]
+        == "No"
+    ):
 
-    if data["Charging_Stations_Near_Home"] < 3:
-        recommendations.append(
-            "Check the actual availability and operating hours "
-            "of public charging stations near your home."
-        )
+        recommendations.append({
+            "title": "Explore charging access",
 
-    if data["Range_Anxiety_Level"] == "High":
-        recommendations.append(
-            "Compare your daily travel distance with the usable "
-            "range of EV models you are considering."
-        )
+            "text": (
+                "Check whether your residence, "
+                "workplace, or regular destinations "
+                "offer practical charging options."
+            ),
+        })
 
-    if data["Daily_Commute_km"] > 80:
-        recommendations.append(
-            "Investigate charging opportunities along your "
-            "regular routes and during longer journeys."
-        )
+    if (
+        profile["Range_Anxiety_Level"]
+        == "High"
+    ):
 
-    if data["Subsidy_Available"] == "No":
-        recommendations.append(
-            "Check whether any current EV incentives apply "
-            "in your location."
-        )
+        recommendations.append({
+            "title": "Plan your driving range",
 
-    if data["Environmental_Concern_Level"] <= 2:
-        recommendations.append(
-            "Compare energy consumption, charging costs, "
-            "and lifecycle environmental impacts when evaluating vehicles."
-        )
+            "text": (
+                "Compare your daily commute with "
+                "real-world EV range and identify "
+                "charging stops for longer trips."
+            ),
+        })
+
+    if (
+        profile["Subsidy_Available"]
+        == "No"
+    ):
+
+        recommendations.append({
+            "title": "Review available incentives",
+
+            "text": (
+                "Check official local and national "
+                "incentive information before "
+                "comparing total ownership costs."
+            ),
+        })
+
+    if (
+        profile["Charging_Stations_Near_Home"] < 3
+        and
+        profile["Charging_Stations_Near_Work"] < 3
+    ):
+
+        recommendations.append({
+            "title": "Find nearby public chargers",
+
+            "text": (
+                "Explore charging stations near "
+                "home, work, and frequently visited "
+                "destinations."
+            ),
+        })
+
+    if (
+        profile["Environmental_Concern_Level"]
+        <= 2
+    ):
+
+        recommendations.append({
+            "title": "Compare practical ownership factors",
+
+            "text": (
+                "Consider purchase price, running "
+                "costs, maintenance, and charging "
+                "convenience."
+            ),
+        })
 
     if not recommendations:
-        recommendations.append(
-            "Compare the real-world range, purchase price, "
-            "charging costs, and warranty of suitable EV models."
-        )
+
+        recommendations.append({
+            "title": "Compare EV options",
+
+            "text": (
+                "Compare vehicle price, usable range, "
+                "charging speed, warranty, and "
+                "ownership costs before deciding."
+            ),
+        })
 
     return recommendations
 
 
 # --------------------------------------------------
-# LANDING PAGE
+# FRONTEND
 # --------------------------------------------------
 
-@app.route("/")
-def home():
+@app.get("/")
+def index():
 
     return render_template(
         "index.html"
@@ -344,336 +498,162 @@ def home():
 
 
 # --------------------------------------------------
-# ASSESSMENT PAGE
+# DATASET OVERVIEW API
 # --------------------------------------------------
 
-@app.route("/assessment")
-def assessment():
+@app.get("/api/overview")
+def overview():
 
-    return render_template(
-        "assessment.html",
-        data=session.get(
-            "last_assessment",
-            DEFAULT_DATA
+    return jsonify({
+        "summary": read_json(
+            SUMMARY_PATH
         ),
-        error=None
-    )
+
+        "model_metrics": read_json(
+            MODEL_DIR / "model_metrics.json"
+        ),
+    })
 
 
 # --------------------------------------------------
-# PROCESS ASSESSMENT
+# PERSONAL ASSESSMENT API
 # --------------------------------------------------
 
-@app.route(
-    "/assess",
-    methods=["POST"]
-)
-def assess():
+@app.post("/api/predict")
+def predict():
 
     try:
 
-        data = parse_form(
-            request.form
+        payload = (
+            request.get_json(silent=True)
+            or {}
         )
 
-        probability = predict_probability(
-            MODEL,
-            data
+        profile = clean_payload(
+            payload
         )
 
-        prediction = (
-            "Yes"
-            if probability >= 0.5
-            else "No"
+        prediction = predict_profile(
+            profile
         )
 
-        readiness = calculate_readiness(
-            data
-        )
+        return jsonify({
+            **prediction,
 
-        if readiness >= 75:
-            readiness_label = "Well Positioned"
-        elif readiness >= 50:
-            readiness_label = "Getting Ready"
-        else:
-            readiness_label = "Needs Planning"
-
-        session["last_assessment"] = data
-
-        return render_template(
-            "results.html",
-            data=data,
-            probability=round(
-                probability * 100,
-                1
+            "readiness_score": readiness_score(
+                profile
             ),
-            prediction=prediction,
-            readiness=readiness,
-            readiness_label=readiness_label,
-            recommendations=generate_recommendations(
-                data
-            )
-        )
 
-    except (ValueError, TypeError) as error:
+            "recommendations": make_recommendations(
+                profile
+            ),
 
-        return render_template(
-            "assessment.html",
-            data=request.form,
-            error=str(error)
-        ), 400
+            "profile": profile,
+        })
 
+    except (
+        ValueError,
+        TypeError,
+        KeyError,
+        OverflowError,
+    ) as exc:
 
-# --------------------------------------------------
-# WHAT-IF SIMULATOR
-# --------------------------------------------------
-
-@app.route(
-    "/simulator",
-    methods=["GET", "POST"]
-)
-def simulator():
-
-    baseline = session.get(
-        "last_assessment",
-        DEFAULT_DATA
-    ).copy()
-
-    baseline_probability = (
-        predict_probability(
-            MODEL,
-            baseline
-        ) * 100
-    )
-
-    scenario_probability = None
-
-    change = None
-
-    error = None
-
-    scenario = baseline.copy()
-
-    if request.method == "POST":
-
-        try:
-
-            scenario["Home_Charging_Possible"] = (
-                request.form.get(
-                    "Home_Charging_Possible",
-                    baseline["Home_Charging_Possible"]
-                )
-            )
-
-            scenario["Range_Anxiety_Level"] = (
-                request.form.get(
-                    "Range_Anxiety_Level",
-                    baseline["Range_Anxiety_Level"]
-                )
-            )
-
-            scenario["Subsidy_Available"] = (
-                request.form.get(
-                    "Subsidy_Available",
-                    baseline["Subsidy_Available"]
-                )
-            )
-
-            scenario[
-                "Charging_Stations_Near_Home"
-            ] = int(
-                request.form.get(
-                    "Charging_Stations_Near_Home",
-                    baseline["Charging_Stations_Near_Home"]
-                )
-            )
-
-            if scenario[
-                "Charging_Stations_Near_Home"
-            ] < 0:
-                raise ValueError(
-                    "Charging station count cannot be negative."
-                )
-
-            if scenario[
-                "Home_Charging_Possible"
-            ] not in ["Yes", "No"]:
-                raise ValueError(
-                    "Invalid home charging selection."
-                )
-
-            if scenario[
-                "Range_Anxiety_Level"
-            ] not in ["Low", "Medium", "High"]:
-                raise ValueError(
-                    "Invalid range anxiety selection."
-                )
-
-            if scenario[
-                "Subsidy_Available"
-            ] not in ["Yes", "No"]:
-                raise ValueError(
-                    "Invalid subsidy selection."
-                )
-
-            scenario_probability = (
-                predict_probability(
-                    MODEL,
-                    scenario
-                ) * 100
-            )
-
-            change = round(
-                scenario_probability
-                - baseline_probability,
-                1
-            )
-
-        except (ValueError, TypeError) as exception:
-            error = str(exception)
-
-    return render_template(
-        "simulator.html",
-        baseline=baseline,
-        scenario=scenario,
-        baseline_probability=round(
-            baseline_probability,
-            1
-        ),
-        scenario_probability=(
-            round(
-                scenario_probability,
-                1
-            )
-            if scenario_probability is not None
-            else None
-        ),
-        change=change,
-        error=error
-    )
+        return jsonify({
+            "error": str(exc)
+        }), 400
 
 
 # --------------------------------------------------
-# INSIGHTS DASHBOARD
+# WHAT-IF SIMULATOR API
 # --------------------------------------------------
 
-@app.route("/insights")
-def insights():
+@app.post("/api/simulate")
+def simulate():
 
-    df = get_dataset()
+    try:
 
-    total_records = len(df)
-
-    yes_count = (
-        df["Will_Buy_EV"]
-        .eq("Yes")
-        .sum()
-    )
-
-    adoption_rate = (
-        round(
-            yes_count / total_records * 100,
-            1
+        payload = (
+            request.get_json(silent=True)
+            or {}
         )
-        if total_records
-        else 0
-    )
 
-    # Adoption by city.
-    city_data = (
-        df.groupby("City_Type")[
-            "Will_Buy_EV"
-        ]
-        .apply(
-            lambda values:
-            values.eq("Yes").mean() * 100
+        original_profile = clean_payload(
+            payload.get("profile", {})
         )
-        .round(1)
-        .to_dict()
-    )
 
-    # Adoption by range anxiety.
-    anxiety_order = [
-        "Low",
-        "Medium",
-        "High"
-    ]
-
-    anxiety_data = (
-        df.groupby("Range_Anxiety_Level")[
-            "Will_Buy_EV"
-        ]
-        .apply(
-            lambda values:
-            values.eq("Yes").mean() * 100
+        changed_profile = (
+            original_profile.copy()
         )
-        .round(1)
-        .to_dict()
-    )
 
-    # Adoption by home charging availability.
-    charging_data = (
-        df.groupby("Home_Charging_Possible")[
-            "Will_Buy_EV"
-        ]
-        .apply(
-            lambda values:
-            values.eq("Yes").mean() * 100
+        changes = payload.get(
+            "changes",
+            {},
         )
-        .round(1)
-        .to_dict()
-    )
 
-    chart_data = {
-        "city_labels": list(
-            city_data.keys()
-        ),
-        "city_values": list(
-            city_data.values()
-        ),
-        "anxiety_labels": anxiety_order,
-        "anxiety_values": [
-            anxiety_data.get(
-                level,
-                0
-            )
-            for level in anxiety_order
-        ],
-        "charging_labels": list(
-            charging_data.keys()
-        ),
-        "charging_values": list(
-            charging_data.values()
-        ),
-    }
+        allowed_changes = {
+            "Charging_Stations_Near_Home",
+            "Charging_Stations_Near_Work",
+            "Home_Charging_Possible",
+            "Subsidy_Available",
+            "Range_Anxiety_Level",
+        }
 
-    metrics = {}
+        for key, value in changes.items():
 
-    if METRICS_PATH.exists():
-        try:
-            with open(
-                METRICS_PATH,
-                "r",
-                encoding="utf-8"
-            ) as file:
-                metrics = json.load(file)
-        except (OSError, json.JSONDecodeError):
-            metrics = {}
+            if key in allowed_changes:
 
-    return render_template(
-        "insights.html",
-        total_records=total_records,
-        adoption_rate=adoption_rate,
-        yes_count=int(yes_count),
-        chart_data=chart_data,
-        metrics=metrics,
-        scenario={}
-    )
+                changed_profile[key] = value
+
+        changed_profile = clean_payload(
+            changed_profile
+        )
+
+        original = predict_profile(
+            original_profile
+        )
+
+        simulated = predict_profile(
+            changed_profile
+        )
+
+        difference = round(
+            simulated["probability"]
+            - original["probability"],
+            1,
+        )
+
+        return jsonify({
+            "original": original,
+
+            "simulated": simulated,
+
+            "difference_points": difference,
+
+            "changed_profile": changed_profile,
+
+            "note": (
+                "This compares model predictions "
+                "under changed inputs. It does not "
+                "prove that a change causes an EV purchase."
+            ),
+        })
+
+    except (
+        ValueError,
+        TypeError,
+        KeyError,
+        OverflowError,
+    ) as exc:
+
+        return jsonify({
+            "error": str(exc)
+        }), 400
 
 
 # --------------------------------------------------
-# LOCAL DEVELOPMENT
+# LOCAL EXECUTION
 # --------------------------------------------------
 
 if __name__ == "__main__":
+
     app.run()

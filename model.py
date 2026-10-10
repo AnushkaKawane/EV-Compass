@@ -7,32 +7,42 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    roc_auc_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 
 # --------------------------------------------------
-# PATHS
+# PROJECT PATHS
 # --------------------------------------------------
 
-BASE_DIR = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent
 
-DATASET_PATH = (
-    BASE_DIR / "EV_Adoption_and_Range_Anxiety_Dataset.csv"
+DATA_PATH = (
+    ROOT
+    / "data"
+    / "EV_Adoption_and_Range_Anxiety_Dataset.csv"
 )
 
-MODEL_DIR = BASE_DIR / "saved_model"
+MODEL_DIR = ROOT / "models"
 
 MODEL_PATH = MODEL_DIR / "ev_model.joblib"
 
-METRICS_PATH = MODEL_DIR / "metrics.json"
+SUMMARY_PATH = MODEL_DIR / "dataset_summary.json"
+
+METRICS_PATH = MODEL_DIR / "model_metrics.json"
 
 
 # --------------------------------------------------
 # DATASET CONFIGURATION
 # --------------------------------------------------
+
+TARGET = "Will_Buy_EV"
 
 NUMERIC_FEATURES = [
     "Age",
@@ -55,41 +65,32 @@ CATEGORICAL_FEATURES = [
 
 FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
 
-TARGET = "Will_Buy_EV"
-
 
 # --------------------------------------------------
-# LOAD DATA
+# LOAD AND VALIDATE DATASET
 # --------------------------------------------------
 
 def load_dataset():
-    if not DATASET_PATH.exists():
+
+    if not DATA_PATH.exists():
         raise FileNotFoundError(
-            f"Dataset not found: {DATASET_PATH}"
+            f"Dataset not found: {DATA_PATH}"
         )
 
-    df = pd.read_csv(DATASET_PATH)
+    df = pd.read_csv(DATA_PATH)
 
-    required_columns = FEATURES + [TARGET]
+    required_columns = set(FEATURES + [TARGET])
 
-    missing_columns = [
-        column
-        for column in required_columns
-        if column not in df.columns
-    ]
+    missing_columns = required_columns - set(df.columns)
 
     if missing_columns:
         raise ValueError(
-            "Dataset is missing these columns: "
-            + ", ".join(missing_columns)
+            f"Missing dataset columns: "
+            f"{sorted(missing_columns)}"
         )
 
-    df = df[required_columns].copy()
+    df = df.drop_duplicates().copy()
 
-    # Remove rows without a valid target.
-    df = df.dropna(subset=[TARGET])
-
-    # Normalize target values.
     df[TARGET] = (
         df[TARGET]
         .astype(str)
@@ -97,52 +98,30 @@ def load_dataset():
         .str.title()
     )
 
-    df = df[df[TARGET].isin(["Yes", "No"])]
+    df = df[
+        df[TARGET].isin(["Yes", "No"])
+    ].copy()
 
-    if df[TARGET].nunique() < 2:
+    if df.empty:
         raise ValueError(
-            "The target must contain both Yes and No."
-        )
-
-    # Convert numerical columns to numeric values.
-    for column in NUMERIC_FEATURES:
-        df[column] = pd.to_numeric(
-            df[column],
-            errors="coerce"
-        )
-
-    # Normalize categorical columns.
-    for column in CATEGORICAL_FEATURES:
-        df[column] = (
-            df[column]
-            .astype("string")
-            .str.strip()
-        )
-
-        df[column] = df[column].replace(
-            "",
-            pd.NA
+            "No valid Yes/No labels found in Will_Buy_EV."
         )
 
     return df
 
 
 # --------------------------------------------------
-# CREATE THE MACHINE LEARNING PIPELINE
+# BUILD MACHINE LEARNING PIPELINE
 # --------------------------------------------------
 
-def create_pipeline():
+def build_pipeline():
 
     numeric_pipeline = Pipeline(
         steps=[
             (
                 "imputer",
-                SimpleImputer(strategy="median")
-            ),
-            (
-                "scaler",
-                StandardScaler()
-            ),
+                SimpleImputer(strategy="median"),
+            )
         ]
     )
 
@@ -152,13 +131,13 @@ def create_pipeline():
                 "imputer",
                 SimpleImputer(
                     strategy="most_frequent"
-                )
+                ),
             ),
             (
                 "encoder",
                 OneHotEncoder(
                     handle_unknown="ignore"
-                )
+                ),
             ),
         ]
     )
@@ -168,23 +147,22 @@ def create_pipeline():
             (
                 "numeric",
                 numeric_pipeline,
-                NUMERIC_FEATURES
+                NUMERIC_FEATURES,
             ),
             (
                 "categorical",
                 categorical_pipeline,
-                CATEGORICAL_FEATURES
+                CATEGORICAL_FEATURES,
             ),
         ]
     )
 
     classifier = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=12,
+        n_estimators=250,
         min_samples_leaf=3,
         class_weight="balanced",
         random_state=42,
-        n_jobs=-1
+        n_jobs=-1,
     )
 
     pipeline = Pipeline(
@@ -198,21 +176,78 @@ def create_pipeline():
 
 
 # --------------------------------------------------
+# CREATE DATASET SUMMARY
+# --------------------------------------------------
+
+def create_dataset_summary(df):
+
+    summary = {
+        "rows": int(len(df)),
+        "columns": int(len(df.columns)),
+        "feature_count": len(FEATURES),
+        "target": TARGET,
+
+        "target_counts": {
+            str(key): int(value)
+            for key, value
+            in df[TARGET].value_counts().items()
+        },
+
+        "missing_values": {
+            str(key): int(value)
+            for key, value
+            in df.isna().sum().items()
+        },
+
+        "numeric_means": {
+            column: (
+                None
+                if pd.isna(df[column].mean())
+                else round(
+                    float(df[column].mean()),
+                    2,
+                )
+            )
+            for column in NUMERIC_FEATURES
+        },
+
+        "range_anxiety_counts": {
+            str(key): int(value)
+            for key, value
+            in df[
+                "Range_Anxiety_Level"
+            ].value_counts().items()
+        },
+
+        "city_type_counts": {
+            str(key): int(value)
+            for key, value
+            in df["City_Type"].value_counts().items()
+        },
+
+        "buy_rate_percent": round(
+            float(
+                (df[TARGET] == "Yes").mean()
+                * 100
+            ),
+            2,
+        ),
+    }
+
+    return summary
+
+
+# --------------------------------------------------
 # TRAIN AND EVALUATE MODEL
 # --------------------------------------------------
 
 def train_model():
 
-    print("Loading dataset...")
-
     df = load_dataset()
 
-    X = df[FEATURES]
+    X = df[FEATURES].copy()
 
-    y = df[TARGET].map({
-        "No": 0,
-        "Yes": 1
-    })
+    y = df[TARGET].copy()
 
     X_train, X_test, y_train, y_test = (
         train_test_split(
@@ -220,190 +255,123 @@ def train_model():
             y,
             test_size=0.20,
             random_state=42,
-            stratify=y
+            stratify=y,
         )
     )
 
-    print("Training Random Forest model...")
-
-    pipeline = create_pipeline()
+    pipeline = build_pipeline()
 
     pipeline.fit(X_train, y_train)
 
     predictions = pipeline.predict(X_test)
 
-    probabilities = pipeline.predict_proba(
-        X_test
-    )[:, 1]
+    metrics = {
+        "test_rows": int(len(y_test)),
 
-    accuracy = accuracy_score(
-        y_test,
-        predictions
-    )
+        "accuracy": round(
+            float(
+                accuracy_score(
+                    y_test,
+                    predictions,
+                )
+            ),
+            4,
+        ),
 
-    auc = None
+        "classification_report": (
+            classification_report(
+                y_test,
+                predictions,
+                output_dict=True,
+                zero_division=0,
+            )
+        ),
+    }
 
-    if y_test.nunique() == 2:
-        auc = roc_auc_score(
-            y_test,
-            probabilities
+    if hasattr(pipeline, "predict_proba"):
+
+        positive_index = list(
+            pipeline.classes_
+        ).index("Yes")
+
+        probabilities = pipeline.predict_proba(
+            X_test
+        )[:, positive_index]
+
+        metrics["roc_auc"] = round(
+            float(
+                roc_auc_score(
+                    y_test == "Yes",
+                    probabilities,
+                )
+            ),
+            4,
         )
 
-    metrics = {
-        "accuracy": round(
-            float(accuracy),
-            4
-        ),
-        "roc_auc": (
-            round(float(auc), 4)
-            if auc is not None
-            else None
-        ),
-        "training_rows": int(len(X_train)),
-        "testing_rows": int(len(X_test)),
-        "dataset_rows": int(len(df)),
-        "target_distribution": {
-            str(key): int(value)
-            for key, value in (
-                df[TARGET]
-                .value_counts()
-                .to_dict()
-                .items()
-            )
-        }
-    }
+    else:
+        metrics["roc_auc"] = None
+
+    # Fit the deployment model using all valid records.
+    pipeline.fit(X, y)
 
     MODEL_DIR.mkdir(
         parents=True,
-        exist_ok=True
+        exist_ok=True,
     )
 
     joblib.dump(
-        pipeline,
-        MODEL_PATH
+        {
+            "pipeline": pipeline,
+            "features": FEATURES,
+            "target": TARGET,
+        },
+        MODEL_PATH,
     )
 
-    with open(
-        METRICS_PATH,
-        "w",
-        encoding="utf-8"
-    ) as file:
-        json.dump(
-            metrics,
-            file,
-            indent=4
-        )
+    SUMMARY_PATH.write_text(
+        json.dumps(
+            create_dataset_summary(df),
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
-    print("\nModel training completed.")
+    METRICS_PATH.write_text(
+        json.dumps(
+            metrics,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    print("Model training completed.")
 
     print(
-        f"Accuracy: {accuracy:.2%}"
+        f"Dataset records: {len(df)}"
     )
 
-    if auc is not None:
+    print(
+        f"Hold-out accuracy: "
+        f"{metrics['accuracy']:.3f}"
+    )
+
+    if metrics["roc_auc"] is not None:
         print(
-            f"ROC-AUC: {auc:.4f}"
+            f"Hold-out ROC-AUC: "
+            f"{metrics['roc_auc']:.3f}"
         )
 
     print(
         f"Saved model: {MODEL_PATH}"
     )
 
-    print(
-        f"Saved metrics: {METRICS_PATH}"
-    )
-
-    return pipeline, metrics
+    return MODEL_PATH
 
 
 # --------------------------------------------------
-# LOAD EXISTING MODEL OR TRAIN A NEW ONE
-# --------------------------------------------------
-
-def get_model():
-
-    if MODEL_PATH.exists():
-        try:
-            pipeline = joblib.load(
-                MODEL_PATH
-            )
-
-            test_input = pd.DataFrame(
-                [{ 
-                    "Age": 30, 
-                    "Annual_Income_USD": 50000,
-                    "Daily_Commute_km": 20,
-                    "Number_of_Cars_Owned": 1,
-                    "Charging_Stations_Near_Home": 2,
-                    "Charging_Stations_Near_Work": 2,
-                    "Environmental_Concern_Level": 3,
-                    "Gender": "Male",
-                    "City_Type": "Urban",
-                    "Current_Car_Type": "Petrol",
-                    "Home_Charging_Possible": "Yes",
-                    "Subsidy_Available": "Yes",
-                    "Range_Anxiety_Level": "Medium"
-                }],
-               columns=FEATURES
-            )
-
-            pipeline.predict_proba(test_input)
-
-            if METRICS_PATH.exists():
-                with open(
-                    METRICS_PATH,
-                    "r",
-                    encoding="utf-8"
-                ) as file:
-                    metrics = json.load(file)
-            else:
-                metrics = {}
-
-            return pipeline, metrics
-
-        except Exception as error:
-            print(
-                "Saved model could not be loaded:",
-                error
-            )
-
-    return train_model()
-
-
-# --------------------------------------------------
-# PREDICT PURCHASE LIKELIHOOD
-# --------------------------------------------------
-
-def predict_probability(
-    pipeline,
-    user_data
-):
-
-    input_df = pd.DataFrame(
-        [user_data],
-        columns=FEATURES
-    )
-
-    probabilities = pipeline.predict_proba(
-        input_df
-    )[0]
-
-    classes = list(
-        pipeline.named_steps[
-            "classifier"
-        ].classes_
-    )
-
-    yes_index = classes.index(1)
-
-    return float(
-        probabilities[yes_index]
-    )
-
-
-# --------------------------------------------------
-# RUN THIS FILE DIRECTLY
+# EXECUTION
 # --------------------------------------------------
 
 if __name__ == "__main__":
+
     train_model()

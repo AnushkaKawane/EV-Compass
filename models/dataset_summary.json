@@ -1,0 +1,47 @@
+{
+  "rows": 10000,
+  "columns": 15,
+  "feature_count": 13,
+  "target": "Will_Buy_EV",
+  "target_counts": {
+    "No": 8250,
+    "Yes": 1750
+  },
+  "missing_values": {
+    "Buyer_ID": 0,
+    "Age": 0,
+    "Gender": 0,
+    "Annual_Income_USD": 178,
+    "City_Type": 0,
+    "Daily_Commute_km": 181,
+    "Number_of_Cars_Owned": 0,
+    "Current_Car_Type": 0,
+    "Charging_Stations_Near_Home": 0,
+    "Charging_Stations_Near_Work": 0,
+    "Home_Charging_Possible": 0,
+    "Environmental_Concern_Level": 184,
+    "Subsidy_Available": 0,
+    "Range_Anxiety_Level": 0,
+    "Will_Buy_EV": 0
+  },
+  "numeric_means": {
+    "Age": 46.94,
+    "Annual_Income_USD": 85378.49,
+    "Daily_Commute_km": 41.11,
+    "Number_of_Cars_Owned": 1.86,
+    "Charging_Stations_Near_Home": 5.35,
+    "Charging_Stations_Near_Work": 7.46,
+    "Environmental_Concern_Level": 2.98
+  },
+  "range_anxiety_counts": {
+    "Low": 8310,
+    "Medium": 1523,
+    "High": 167
+  },
+  "city_type_counts": {
+    "Urban": 4941,
+    "Suburban": 3563,
+    "Rural": 1496
+  },
+  "buy_rate_percent": 17.5
+}
