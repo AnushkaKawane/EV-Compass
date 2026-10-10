@@ -95,23 +95,33 @@ function getFormProfile(form) {
 // ==========================================
 
 async function postJSON(url, body) {
-    const response = await fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-    });
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
 
-    const data = await response.json();
+  const responseText = await response.text();
 
-    if (!response.ok) {
-        throw new Error(
-            data.error || "Something went wrong. Please try again."
-        );
-    }
+  let data;
 
-    return data;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    throw new Error(
+      `Prediction API returned an unexpected response (HTTP ${response.status}). Check Vercel Runtime Logs.`
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || `Prediction failed (HTTP ${response.status}).`
+    );
+  }
+
+  return data;
 }
 
 
