@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Your EV Report | EV Compass</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('style_css') }}"
+    >
+</head>
+
+<body>
+
+    <header class="navbar navbar-light">
+
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-icon">E</span>
+            <span>EV<span class="brand-accent">Compass</span></span>
+        </a>
+
+        <nav class="nav-links">
+            <a href="{{ url_for('assessment') }}">Assessment</a>
+            <a href="{{ url_for('simulator') }}">Simulator</a>
+            <a href="{{ url_for('insights') }}">Insights</a>
+        </nav>
+
+    </header>
+
+
+    <main class="page-container">
+
+        <section class="page-heading">
+
+            <div class="eyebrow">YOUR PERSONAL REPORT</div>
+
+            <h1>
+                Your results,
+                <span>at a glance.</span>
+            </h1>
+
+            <p>
+                Here's an overview of your current EV readiness
+                and the model's estimate of your recorded purchase intention.
+            </p>
+
+        </section>
+
+
+        <section class="result-grid">
+
+            <article class="result-card readiness-card">
+
+                <div class="result-card-heading">
+                    <span>EV READINESS</span>
+                    <span class="card-symbol">↗</span>
+                </div>
+
+                <div class="score-ring">
+
+                    <div class="score-ring-inner">
+
+                        <strong>{{ readiness }}</strong>
+
+                        <span>out of 100</span>
+
+                    </div>
+
+                </div>
+
+                <h2>{{ readiness_label }}</h2>
+
+                <p>
+                    A rule-based score reflecting selected aspects
+                    of charging access, range anxiety, commute distance,
+                    and environmental concern.
+                </p>
+
+            </article>
+
+
+            <article class="result-card probability-card">
+
+                <div class="result-card-heading">
+                    <span>PREDICTED PURCHASE LIKELIHOOD</span>
+                    <span class="card-symbol">◎</span>
+                </div>
+
+                <div class="probability-number">
+                    {{ probability }}<span>%</span>
+                </div>
+
+                <div class="progress-track">
+
+                    <div
+                        class="progress-fill"
+                        style="width: {{ probability }}%;"
+                    ></div>
+
+                </div>
+
+                <h2>
+                    {% if prediction == 'Yes' %}
+                    Higher predicted likelihood
+                    {% else %}
+                    Lower predicted likelihood
+                    {% endif %}
+                </h2>
+
+                <p>
+                    The model's estimated probability for the
+                    "Yes" class in your supplied profile.
+                </p>
+
+            </article>
+
+        </section>
+
+
+        <section class="content-card">
+
+            <div class="section-heading section-heading-left">
+
+                <div class="eyebrow">YOUR PROFILE</div>
+
+                <h2>
+                    What we analysed
+                </h2>
+
+                <p>
+                    These are the details you entered in the assessment.
+                </p>
+
+            </div>
+
+
+            <div class="profile-summary">
+
+                <div>
+                    <span>Daily commute</span>
+                    <strong>{{ data['Daily_Commute_km'] }} km</strong>
+                </div>
+
+                <div>
+                    <span>Home charging</span>
+                    <strong>{{ data['Home_Charging_Possible'] }}</strong>
+                </div>
+
+                <div>
+                    <span>Range anxiety</span>
+                    <strong>{{ data['Range_Anxiety_Level'] }}</strong>
+                </div>
+
+                <div>
+                    <span>City type</span>
+                    <strong>{{ data['City_Type'] }}</strong>
+                </div>
+
+                <div>
+                    <span>Stations near home</span>
+                    <strong>{{ data['Charging_Stations_Near_Home'] }}</strong>
+                </div>
+
+                <div>
+                    <span>Subsidy available</span>
+                    <strong>{{ data['Subsidy_Available'] }}</strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="content-card">
+
+            <div class="section-heading section-heading-left">
+
+                <div class="eyebrow">SUGGESTED NEXT STEPS</div>
+
+                <h2>
+                    Make your next move.
+                </h2>
+
+                <p>
+                    Consider these practical steps when evaluating
+                    whether an EV fits your lifestyle.
+                </p>
+
+            </div>
+
+
+            <div class="recommendation-list">
+
+                {% for recommendation in recommendations %}
+
+                <article class="recommendation-item">
+
+                    <span class="recommendation-check">✓</span>
+
+                    <p>{{ recommendation }}</p>
+
+                </article>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+
+        <section class="cta-grid">
+
+            <a
+                class="cta-card"
+                href="{{ url_for('simulator') }}"
+            >
+
+                <span class="eyebrow">EXPLORE SCENARIOS</span>
+
+                <h3>What if things changed?</h3>
+
+                <p>
+                    Change selected charging and range-anxiety
+                    conditions to compare model predictions.
+                </p>
+
+                <span class="cta-link">Open simulator →</span>
+
+            </a>
+
+
+            <a
+                class="cta-card"
+                href="{{ url_for('insights') }}"
+            >
+
+                <span class="eyebrow">EXPLORE THE DATA</span>
+
+                <h3>Look at the bigger picture.</h3>
+
+                <p>
+                    Explore EV purchase intention across
+                    different groups in the dataset.
+                </p>
+
+                <span class="cta-link">View insights →</span>
+
+            </a>
+
+        </section>
+
+
+        <div class="disclaimer">
+            <strong>How to interpret these results:</strong>
+            The readiness score is rule-based. Purchase likelihood
+            is estimated from patterns in the supplied dataset.
+            Neither result guarantees actual EV suitability or
+            future purchasing behaviour.
+        </div>
+
+
+        <div class="page-actions">
+
+            <a
+                class="button button-outline"
+                href="{{ url_for('assessment') }}"
+            >
+                Edit Assessment
+            </a>
+
+            <a
+                class="button button-green"
+                href="{{ url_for('simulator') }}"
+            >
+                Explore What-If Scenarios →
+            </a>
+
+        </div>
+
+    </main>
+
+
+    <footer class="footer footer-light">
+
+        <a class="brand" href="{{ url_for('home') }}">
+            <span class="brand-icon">E</span>
+            <span>EV<span class="brand-accent">Compass</span></span>
+        </a>
+
+        <span>Your next move, made clearer.</span>
+
+    </footer>
+
+
+    <script src="{{ url_for('script_js') }}"></script>
+
+</body>
+</html>

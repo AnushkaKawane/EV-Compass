@@ -1,0 +1,11 @@
+{
+    "accuracy": 0.837,
+    "roc_auc": 0.9019,
+    "training_rows": 8000,
+    "testing_rows": 2000,
+    "dataset_rows": 10000,
+    "target_distribution": {
+        "No": 8250,
+        "Yes": 1750
+    }
+}
