@@ -6,10 +6,15 @@ import pandas as pd
 
 from flask import (
     Flask,
-    jsonify,
     render_template,
     request,
+    redirect,
+    url_for,
+    session,
+    send_from_directory,
+    jsonify,
 )
+
 
 from model import (
     FEATURES,
@@ -516,7 +521,7 @@ def overview():
 
 
 # --------------------------------------------------
-# PERSONAL ASSESSMENT API
+# PREDICTION API
 # --------------------------------------------------
 
 @app.post("/api/predict")
