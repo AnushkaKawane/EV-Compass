@@ -5,7 +5,12 @@
 "src": "app.py",
 "use": "@vercel/python",
 "config": {
-"includeFiles": "public/**"
+"includeFiles": [
+"model.py",
+"saved_model/**",
+"public/**",
+"EV_Adoption_and_Range_Anxiety_Dataset.csv"
+]
 }
 }
 ],
