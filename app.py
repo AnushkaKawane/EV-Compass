@@ -521,46 +521,29 @@ def overview():
 
 @app.post("/api/predict")
 def predict():
-
     try:
+        payload = request.get_json(silent=True) or {}
 
-        payload = (
-            request.get_json(silent=True)
-            or {}
-        )
-
-        profile = clean_payload(
-            payload
-        )
-
-        prediction = predict_profile(
-            profile
-        )
+        profile = clean_payload(payload)
+        prediction = predict_profile(profile)
 
         return jsonify({
             **prediction,
-
-            "readiness_score": readiness_score(
-                profile
-            ),
-
-            "recommendations": make_recommendations(
-                profile
-            ),
-
+            "readiness_score": readiness_score(profile),
+            "recommendations": make_recommendations(profile),
             "profile": profile,
         })
 
-    except (
-        ValueError,
-        TypeError,
-        KeyError,
-        OverflowError,
-    ) as exc:
+    except (ValueError, TypeError, KeyError) as exc:
+        app.logger.warning("Prediction input error: %s", exc)
+        return jsonify({"error": str(exc)}), 400
 
+    except Exception as exc:
+        app.logger.exception("Unexpected error in /api/predict")
         return jsonify({
-            "error": str(exc)
-        }), 400
+            "error": "Prediction failed on the server.",
+            "detail": str(exc)
+        }), 500
 
 
 # --------------------------------------------------
