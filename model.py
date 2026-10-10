@@ -328,6 +328,27 @@ def get_model():
                 MODEL_PATH
             )
 
+            test_input = pd.DataFrame(
+                [{ 
+                    "Age": 30, 
+                    "Annual_Income_USD": 50000,
+                    "Daily_Commute_km": 20,
+                    "Number_of_Cars_Owned": 1,
+                    "Charging_Stations_Near_Home": 2,
+                    "Charging_Stations_Near_Work": 2,
+                    "Environmental_Concern_Level": 3,
+                    "Gender": "Male",
+                    "City_Type": "Urban",
+                    "Current_Car_Type": "Petrol",
+                    "Home_Charging_Possible": "Yes",
+                    "Subsidy_Available": "Yes",
+                    "Range_Anxiety_Level": "Medium"
+                }],
+               columns=FEATURES
+            )
+
+            pipeline.predict_proba(test_input)
+
             if METRICS_PATH.exists():
                 with open(
                     METRICS_PATH,
