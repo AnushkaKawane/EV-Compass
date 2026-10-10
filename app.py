@@ -70,23 +70,27 @@ MODEL, MODEL_METRICS = get_model()
 
 
 # --------------------------------------------------
-# SERVE FRONTEND ASSETS LOCALLY
+# SERVE FRONTEND ASSETS
 # --------------------------------------------------
 
 @app.route("/style.css")
 def style_css():
-    return send_from_directory(
-        PUBLIC_DIR,
+    response = send_from_directory(
+        str(PUBLIC_DIR),
         "style.css"
     )
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 @app.route("/script.js")
 def script_js():
-    return send_from_directory(
-        PUBLIC_DIR,
+    response = send_from_directory(
+        str(PUBLIC_DIR),
         "script.js"
     )
+    response.headers["Cache-Control"] = "no-cache"
+    return response
 
 
 # --------------------------------------------------
