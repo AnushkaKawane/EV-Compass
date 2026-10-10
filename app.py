@@ -672,7 +672,8 @@ def insights():
         adoption_rate=adoption_rate,
         yes_count=int(yes_count),
         chart_data=chart_data,
-        metrics=metrics
+        metrics=metrics,
+        scenario={}
     )
 
 
